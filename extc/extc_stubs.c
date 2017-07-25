@@ -468,6 +468,10 @@ CAMLprim value get_real_path( value path ) {
 #endif
 }
 
+#ifndef _WIN32
+#define TimeSpecToSeconds(ts) (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0
+#endif
+
 CAMLprim value sys_time() {
 #ifdef _WIN32
 #define EPOCH_DIFF	(134774*24*60*60.0)
@@ -489,9 +493,9 @@ CAMLprim value sys_time() {
 	}
 	return caml_copy_double( ((double)counter.QuadPart) / ((double)freq.QuadPart) );
 #else
-	struct tms t;
-	times(&t);
-	return caml_copy_double( ((double)(t.tms_utime + t.tms_stime)) / CLK_TCK );
+	struct timespec t;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
+	return caml_copy_double(TimeSpecToSeconds(t));
 #endif
 }
 
