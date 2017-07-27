@@ -44,6 +44,8 @@
 #	include <sys/param.h>
 #	include <sys/syslimits.h>
 #	include <mach-o/dyld.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
 #endif
 #ifdef __FreeBSD__
 #	include <sys/param.h>
@@ -493,6 +495,21 @@ CAMLprim value sys_time() {
 		return caml_copy_double( ((double)ui.QuadPart) / 10000000.0 - EPOCH_DIFF );
 	}
 	return caml_copy_double( ((double)counter.QuadPart) / ((double)freq.QuadPart) );
+#elif __APPLE__
+
+	uint64_t time;
+	uint64_t elapsedNano;
+	static mach_timebase_info_data_t sTimebaseInfo;
+
+	time = mach_absolute_time();
+
+	if ( sTimebaseInfo.denom == 0 ) {
+		(void) mach_timebase_info(&sTimebaseInfo);
+	}
+
+	elapsedNano = time * sTimebaseInfo.numer / sTimebaseInfo.denom;
+
+	return caml_copy_double(time / 1000000000.0);
 #else
 	struct timespec t;
 	clock_gettime(CLOCK_MONOTONIC_RAW, &t);
